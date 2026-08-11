@@ -53,12 +53,16 @@ class ToyDataModule(L.LightningDataModule):
     # 只在单进程/单设备上执行一次：适合下载、tokenize、构建词表等
     def prepare_data(self):
         # 这里没有真正的下载，仅演示。可在此处做只执行一次的准备。
+        # 只在 rank 0 跑一次：下载、tokenize、建词表……
+        # 不要在这里 self.xxx = ... 赋值状态（其他 GPU 看不到）
         pass
 
     # 在每个进程上执行：负责真正切分数据、实例化 Dataset
     def setup(self, stage: str = None):
+        # 每张卡都执行：切分数据、实例化 Dataset
+        # 这里的 self.train_ds 等，在每张卡上各自存在一份
         if stage in (None, "fit"):
-            full = ToyDataset(self.hparams.train_size, seed=0)
+            full = ToyDataset(self.hparams.train_size, seed=0) # Dataset
             val_len = int(self.hparams.train_size * self.hparams.val_ratio)
             train_len = self.hparams.train_size - val_len
             self.train_ds, self.val_ds = random_split(full, [train_len, val_len])
@@ -75,10 +79,18 @@ class ToyDataModule(L.LightningDataModule):
         )
 
     def val_dataloader(self):
-        return DataLoader(self.val_ds, batch_size=self.hparams.batch_size)
+        return DataLoader(
+            self.val_ds, batch_size=self.hparams.batch_size,
+            shuffle=False,
+            num_workers=self.hparams.num_workers,
+        )
 
     def test_dataloader(self):
-        return DataLoader(self.test_ds, batch_size=self.hparams.batch_size)
+        return DataLoader(
+            self.test_ds, batch_size=self.hparams.batch_size,
+            shuffle=False,
+            num_workers=self.hparams.num_workers,
+        )
 
 
 # ---------------------------------------------------------------
@@ -91,6 +103,7 @@ class Classifier(L.LightningModule):
         self.net = nn.Sequential(nn.Linear(8, 32), nn.ReLU(), nn.Linear(32, 3))
         self.train_acc = Accuracy(task="multiclass", num_classes=3)
         self.val_acc = Accuracy(task="multiclass", num_classes=3)
+        self.test_acc = Accuracy(task="multiclass", num_classes=3)
 
     def forward(self, x):
         return self.net(x)
@@ -109,6 +122,14 @@ class Classifier(L.LightningModule):
         self.val_acc(self(x), y)
         self.log("val_loss", loss, prog_bar=True)
         self.log("val_acc", self.val_acc, prog_bar=True)
+        return loss
+
+    def test_step(self, batch, batch_idx):
+        x, y = batch
+        loss = F.cross_entropy(self(x), y)
+        self.test_acc(self(x), y)
+        self.log("test_loss", loss, prog_bar=True)
+        self.log("test_acc", self.test_acc, prog_bar=True)
         return loss
 
     def configure_optimizers(self):

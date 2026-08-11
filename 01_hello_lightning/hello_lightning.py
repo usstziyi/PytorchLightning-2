@@ -111,10 +111,13 @@ def prepare_data(batch_size: int = 64):
 # 3. 主流程：模型 + Trainer 就绪后，训练器自动处理 训练/验证/保存 等工程细节
 # ---------------------------------------------------------------
 def main():
+    # 数据
     train_loader, val_loader, test_loader = prepare_data()
 
+    # 会计
     model = HelloLightning(hidden_size=128)
 
+    # 经理
     trainer = L.Trainer(
         max_epochs=2,
         accelerator="mps",  # Apple Silicon 的 MPS 设备
