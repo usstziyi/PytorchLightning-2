@@ -29,7 +29,12 @@ class TrainerDemoModel(L.LightningModule):
             nn.ReLU(),
             nn.Linear(32, 3),
         )
+        # 这两行代码创建了两个 torchmetrics 的 准确率指标对象 ：
         # 使用 torchmetrics 的标准指标（比手写更规范、可自动聚合）
+        # multiclass:声明这是 多分类 任务
+        # binary （二分类）、 multilabel （多标签）
+        # 支持多设备同步 ：在分布式训练时能自动处理各设备间的指标同步。
+        # metric 的定位就是"数据集/epoch 级别的统计量"，不是"单 step 观测值"。
         self.train_acc = Accuracy(task="multiclass", num_classes=3)
         self.val_acc = Accuracy(task="multiclass", num_classes=3)
 
@@ -72,6 +77,7 @@ def main():
     loader = make_data()
 
     # 用 overfit_batches 快速验证代码能否跑通（只在一个 batch 上反复训练）
+    # 调试利器： 只用 1 个 batch 的数据反复训练 ，用来验证"代码没写错"。
     trainer_overfit = L.Trainer(
         accelerator="mps",
         devices="auto",
@@ -90,6 +96,8 @@ def main():
         precision = "bf16-mixed"
     else:
         precision = "32-true"
+
+
     trainer = L.Trainer(
         accelerator="mps",
         devices="auto",
@@ -99,7 +107,7 @@ def main():
         precision=precision,          # 混合精度（CPU 上自动回退到 32）
         limit_train_batches=0.5,      # 每 epoch 只用 50% 训练数据（演示用）
         log_every_n_steps=10,
-        enable_checkpointing=True,
+        enable_checkpointing=True,    # 开启模型检查点保存
     )
     trainer.fit(TrainerDemoModel(), loader)
 
