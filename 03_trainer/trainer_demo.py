@@ -103,10 +103,10 @@ def main():
         devices="auto",
         max_epochs=5,
         gradient_clip_val=1.0,        # 梯度裁剪
-        accumulate_grad_batches=2,    # 累积梯度，等效 batch×2
+        accumulate_grad_batches=2,    # 累积梯度，等效 batch×2,12 个 batch 实际只做 6 次优化器更新
         precision=precision,          # 混合精度（CPU 上自动回退到 32）
-        limit_train_batches=0.5,      # 每 epoch 只用 50% 训练数据（演示用）
-        log_every_n_steps=10,
+        limit_train_batches=0.5,      # 每 epoch 只用 50% 训练数据（演示用）,快速跑通，缩短单 epoch 时间（本文件就是这么用的）
+        log_every_n_steps=10,         # 12 个 batch 里只有 step 10 会 flush 一次 step 级日志
         enable_checkpointing=True,    # 开启模型检查点保存
     )
     trainer.fit(TrainerDemoModel(), loader)
