@@ -59,7 +59,7 @@ class AdvancedModel(L.LightningModule):
                 "scheduler": scheduler,
                 "interval": "epoch",  # 或 "step"
                 "frequency": 1,
-                "monitor": "val_loss",  # 若是 ReduceLROnPlateau 需指定
+                # "monitor": "val_loss",  # 若是 ReduceLROnPlateau 需指定
             },
         }
 
