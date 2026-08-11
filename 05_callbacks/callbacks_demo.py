@@ -73,6 +73,21 @@ class InfoPrinter(Callback):
         print(">>> 自定义回调：训练结束，最好的 val_acc 日志见 checkpoint 或日志")
 
 
+# ---------------------------------------------------------------
+# 自定义 Callback：在每个 optimizer.step 前监控全局梯度 L2 范数
+# ---------------------------------------------------------------
+class GradNormMonitor(Callback):
+    """on_before_optimizer_step 在 backward 之后、optimizer.step 之前触发，
+    此时 p.grad 必然存在，无需判空（但仍保留判空以防冻结参数无梯度）。
+    """
+
+    def on_before_optimizer_step(self, trainer, pl_module, optimizer):
+        # 全程用 tensor 计算，避免循环里反复 .item() 触发 CPU↔MPS 同步
+        norms = [p.grad.data.norm(2) ** 2 for p in pl_module.parameters() if p.grad is not None]
+        if norms:
+            pl_module.log("grad_norm", torch.stack(norms).sum().sqrt(), prog_bar=True)
+
+
 def make_data():
     x = torch.randn(1500, 8)
     w = torch.randn(8, 3)
@@ -103,7 +118,7 @@ def main():
         max_epochs=20,
         accelerator="mps",
         devices="auto",
-        callbacks=[checkpoint, early_stop, lr_monitor, InfoPrinter()],
+        callbacks=[checkpoint, early_stop, lr_monitor, InfoPrinter(), GradNormMonitor()],
         log_every_n_steps=10,
     )
 
