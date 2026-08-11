@@ -3,8 +3,9 @@ Lesson 5: Callbacks —— 在训练关键节点"插桩"
 =============================================
 
 学习目标：
-  1. 理解 Callback 与 hook 的区别：hook 写在 LightningModule 里（模型逻辑），
-     callback 是独立于模型的"工程逻辑"，可插拔、可复用。
+  1. 理解 Callback 与 hook 的区别：
+    - hook 写在 LightningModule 里（模型逻辑），
+    - callback 是独立于模型的"工程逻辑"，可插拔、可复用。
   2. 掌握内置回调：ModelCheckpoint / EarlyStopping / LearningRateMonitor / RichProgressBar。
   3. 学会自定义一个 Callback。
 
@@ -51,7 +52,10 @@ class DemoModel(L.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.5)
+        # 返回 dict 格式，让 Lightning 自动调用 scheduler 并配合 LearningRateMonitor 记录 lr
+        return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
 
 # ---------------------------------------------------------------
@@ -59,6 +63,7 @@ class DemoModel(L.LightningModule):
 # ---------------------------------------------------------------
 class InfoPrinter(Callback):
     def on_train_start(self, trainer, pl_module):
+        # pl_module ：当前的 LightningModule 模型
         print(">>> 自定义回调：训练开始")
 
     def on_train_epoch_end(self, trainer, pl_module):
@@ -89,7 +94,7 @@ def main():
         filename="best-{epoch}-{val_acc:.2f}",
         monitor="val_acc",
         mode="max",
-        save_top_k=1,
+        save_top_k=1,  # 最多保存 1 个模型
     )
     early_stop = EarlyStopping(monitor="val_loss", patience=5, mode="min")
     lr_monitor = LearningRateMonitor(logging_interval="epoch")

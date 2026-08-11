@@ -32,3 +32,6 @@ vit_*/
 # lightning/
 lightning/
 lightning_logs/
+
+# checkpoints/
+checkpoints/
