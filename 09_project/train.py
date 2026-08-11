@@ -16,13 +16,18 @@ from lightning.pytorch.loggers import TensorBoardLogger
 from cifar10_data import CIFAR10DataModule
 from model import CIFAR10Model
 import torch
+import os
+
+# 利用 Tensor Core 加速矩阵运算（medium/high 会牺牲少量精度换取性能）
+# 一个是 数学库层 （matmul 用什么精度算）
+torch.set_float32_matmul_precision("high")
 
 
 def main():
     dm = CIFAR10DataModule(
         data_dir="./data",
         batch_size=128,
-        num_workers=0,
+        num_workers=min(os.cpu_count(), 4),
         val_split=0.1,
     )
 
@@ -53,13 +58,14 @@ def main():
         # ),
     )
 
-    # # 自动选择精度
-    # if torch.cuda.is_available():
-    #     precision = "16-mixed"
-    # elif torch.backends.mps.is_available():
-    #     precision = "bf16-mixed"
-    # else:
-    #     precision = "32-true"
+    # 自动选择精度（RTX 4090 原生支持 bf16，优先使用 bf16-mixed）
+    # 一个是 训练框架层 （整个 step 怎么分配精度）。
+    if torch.cuda.is_available():
+        precision = "bf16-mixed"
+    elif torch.backends.mps.is_available():
+        precision = "bf16-mixed"
+    else:
+        precision = "32-true"
 
     trainer = L.Trainer(
         max_epochs=20,
@@ -68,7 +74,7 @@ def main():
         callbacks=[checkpoint, early_stop, progress_bar],
         logger=logger,
         log_every_n_steps=20,
-        # precision=precision,
+        precision=precision,
     )
 
     # 训练 + 验证
