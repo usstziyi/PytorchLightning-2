@@ -80,7 +80,8 @@ def main():
     restored = SaveModel.load_from_checkpoint(best_path)
     restored.eval()
     with torch.no_grad():
-        sample = torch.randn(5, 8)
+        # sample 必须和模型在同一设备上，否则报 "input is on cpu but expected on mps"
+        sample = torch.randn(5, 8, device=restored.device)
         preds = restored(sample).argmax(dim=1)
     print("恢复模型推理结果:", preds.tolist())
 

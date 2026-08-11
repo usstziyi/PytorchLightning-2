@@ -117,6 +117,11 @@ def main():
     # 会计
     model = HelloLightning(hidden_size=128)
 
+    # accelerator="auto"
+    # ├─ 检测到 NVIDIA GPU 可用？ → 用 "gpu"（cuda）
+    # ├─ 检测到 Apple MPS 可用？ → 用 "mps"
+    # ├─ 检测到 TPU？            → 用 "tpu"
+    # └─ 都没有                  → 回退到 "cpu"
     # 经理
     trainer = L.Trainer(
         max_epochs=2,
