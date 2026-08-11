@@ -53,6 +53,8 @@ class CIFAR10Model(L.LightningModule):
         super().__init__()
         self.save_hyperparameters()
 
+        self.example_input_array = torch.zeros(1, 3, 32, 32)
+
         self.features = nn.Sequential(
             nn.Conv2d(3, 32, 3, padding=1, bias=False),
             nn.BatchNorm2d(32), # BatchNorm 会做 平移（bias）和缩放（scale） ，已经具有偏置的作用。
