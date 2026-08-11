@@ -15,6 +15,7 @@ Lesson 8: 高级特性
 
 import lightning as L
 import torch
+from lightning.pytorch.callbacks import TQDMProgressBar
 from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, TensorDataset
@@ -73,7 +74,12 @@ def main():
     train_loader = DataLoader(train, batch_size=64, shuffle=True)
     val_loader = DataLoader(val, batch_size=64)
 
-    trainer = L.Trainer(max_epochs=5, accelerator="mps", devices="auto")
+    trainer = L.Trainer(
+        max_epochs=5,
+        accelerator="mps",
+        devices="auto",
+        callbacks=[TQDMProgressBar(leave=True)],  # 保留每个 epoch 的进度条
+    )
     # strategies: 'ddp'（多卡）、precision='bf16-mixed' 等
     trainer.fit(AdvancedModel(), train_loader, val_loader)
 

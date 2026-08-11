@@ -9,11 +9,13 @@ DataModule 与模型，跑通一个完整的图像分类实战。
 """
 
 import lightning as L
-from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
+from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint, RichProgressBar
+from lightning.pytorch.callbacks.progress.rich_progress import RichProgressBarTheme
 from lightning.pytorch.loggers import TensorBoardLogger
 
 from cifar10_data import CIFAR10DataModule
 from model import CIFAR10Model
+import torch
 
 
 def main():
@@ -36,13 +38,37 @@ def main():
     early_stop = EarlyStopping(monitor="val_loss", patience=5, mode="min")
     logger = TensorBoardLogger(save_dir="logs", name="cifar10")
 
+    # Rich 进度条：保留每个 epoch、彩色、train/val/test 分组显示
+    progress_bar = RichProgressBar(
+        leave=True,  # 完成后保留进度条（不覆盖）
+        # theme=RichProgressBarTheme(
+        #     description="green_yellow",      # 进度条左侧描述文本的主题样式
+        #     progress_bar="green1",          # 进度条本体的主题样式
+        #     progress_bar_finished="green1",  # 已完成进度部分的主题样式
+        #     progress_bar_pulse="magenta",   # 进度条脉冲动画的主题样式
+        #     batch_progress="grey70",        # batch进度（当前/总批次）的主题样式
+        #     time="grey82",                  # 耗时（已用/剩余时间）的主题样式
+        #     processing_speed="grey70",      # 处理速度（样本数/秒）的主题样式
+        #     metrics="white",                # 指标（如val_acc、val_loss）的主题样式
+        # ),
+    )
+
+    # # 自动选择精度
+    # if torch.cuda.is_available():
+    #     precision = "16-mixed"
+    # elif torch.backends.mps.is_available():
+    #     precision = "bf16-mixed"
+    # else:
+    #     precision = "32-true"
+
     trainer = L.Trainer(
-        max_epochs=10,
-        accelerator="mps",
+        max_epochs=20,
+        accelerator="auto",
         devices="auto",
-        callbacks=[checkpoint, early_stop],
+        callbacks=[checkpoint, early_stop, progress_bar],
         logger=logger,
         log_every_n_steps=20,
+        # precision=precision,
     )
 
     # 训练 + 验证

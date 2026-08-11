@@ -14,7 +14,7 @@ class CIFAR10DataModule(L.LightningDataModule):
         self,
         data_dir: str = "./data",
         batch_size: int = 128,
-        num_workers: int = 0,
+        num_workers: int = 2,
         val_split: float = 0.1,
     ):
         super().__init__()
@@ -29,7 +29,7 @@ class CIFAR10DataModule(L.LightningDataModule):
         # 训练增强：随机裁剪 + 水平翻转 + 归一化
         train_transform = transforms.Compose(
             [
-                transforms.RandomCrop(32, padding=4),
+                transforms.RandomCrop(32, padding=4, padding_mode="reflect"),  # 防止过拟合,随机裁剪 32x32，填充 4px
                 transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
                 transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
