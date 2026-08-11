@@ -35,3 +35,6 @@ lightning_logs/
 
 # checkpoints/
 checkpoints/
+
+# logs/
+logs/

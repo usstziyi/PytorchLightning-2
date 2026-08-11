@@ -39,6 +39,7 @@ class LoggingModel(L.LightningModule):
 
         # grad 在 backward 之后才存在，首个 step 需判空，避免 torch.stack([]) 报错
         grads = [p.grad.flatten() for p in self.parameters() if p.grad is not None]
+        # 把列表里所有一维梯度 首尾相接，计算L2范数
         grad_norm = torch.norm(torch.cat(grads)) if grads else torch.tensor(0.0)
 
         # log_dict 批量记录
@@ -52,7 +53,9 @@ class LoggingModel(L.LightningModule):
 
         # 记录直方图（权重分布）
         self.logger.experiment.add_histogram(
-            "fc1.weight", self.net[0].weight, self.global_step
+            "fc1.weight", # 标签名：直方图名称
+            self.net[0].weight, # 要记录的值：权重张量
+            self.global_step # 横轴：当前训练步
         )
         return loss
 
@@ -64,9 +67,15 @@ class LoggingModel(L.LightningModule):
 
     def on_validation_epoch_end(self):
         # 记录一张示例图像（仅演示，用随机数据代替真实图像）
+        # self.logger            →  Lightning 的 TensorBoardLogger（封装 API）
+        # self.logger.experiment →  底层 SummaryWriter（能直接调 add_scalar/add_image/add_histogram...）
         if hasattr(self.logger, "experiment"):
             fake_img = torch.rand(1, 3, 28, 28)
-            self.logger.experiment.add_image("sample_image", fake_img[0], self.current_epoch)
+            self.logger.experiment.add_image(
+                "sample_image", # 标签名：图像名称
+                fake_img[0], # 要记录的值：随机图像
+                self.current_epoch # 横轴：当前验证 epoch
+            )
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
@@ -83,7 +92,9 @@ def make_data():
 def main():
     loader = make_data()
 
+    # 决定日志写到哪、用什么格式（TensorBoard / CSV / Wandb...）
     logger = TensorBoardLogger(save_dir="logs", name="lesson6")
+
     trainer = L.Trainer(
         max_epochs=3,
         accelerator="mps",
