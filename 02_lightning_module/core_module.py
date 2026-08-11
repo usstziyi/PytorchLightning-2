@@ -51,7 +51,7 @@ class CoreModule(L.LightningModule):
         # 注意 acc 在 step 维度即可，flatten 到 epoch 维度可加 reduce_fx
         acc = (logits.argmax(dim=1) == y).float().mean()
         self.log("train_loss", loss, prog_bar=True, on_step=True, on_epoch=True)
-        self.log("train_acc", acc, on_step=True, on_epoch=True)
+        self.log("train_acc", acc, prog_bar=True, on_step=True, on_epoch=True)
         return loss  # 返回 loss 给 Trainer 用于反向传播
 
     # ---------- 验证 ----------
@@ -101,11 +101,11 @@ class CoreModule(L.LightningModule):
 def make_synthetic_data(num_samples: int = 2000, in_features: int = 8, n_classes: int = 3):
     """生成一个人造可分类数据集，避免依赖外部下载。"""
     torch.manual_seed(42)
-    x = torch.randn(num_samples, in_features)
+    x = torch.randn(num_samples, in_features)  # (2000,8)
     # 用一个随机线性映射 + 三层中心，制造可分结构
-    w = torch.randn(in_features, n_classes)
-    logits = x @ w
-    y = logits.argmax(dim=1)
+    w = torch.randn(in_features, n_classes)  # (8,3)
+    logits = x @ w  # (2000,3)
+    y = logits.argmax(dim=1)  # (2000,)
     return TensorDataset(x, y)
 
 
