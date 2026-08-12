@@ -146,5 +146,11 @@ def main():
     trainer.test(model, datamodule=dm)
 
 
+    # # 恢复数据模块
+    # dm = ToyDataModule.load_from_checkpoint("path/to/checkpoint.ckpt")
+    # # 恢复模型
+    # model = Classifier.load_from_checkpoint("path/to/checkpoint.ckpt")
+
+
 if __name__ == "__main__":
     main()
